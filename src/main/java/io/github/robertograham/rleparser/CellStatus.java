@@ -1,6 +1,7 @@
 package io.github.robertograham.rleparser;
 
 import java.util.EnumSet;
+import java.util.stream.Collectors;
 
 public enum CellStatus {
 
@@ -17,7 +18,7 @@ public enum CellStatus {
         return EnumSet.allOf(CellStatus.class).stream()
                 .filter(cellStatus -> cellStatus.code.equals(code))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("Code '" + code + "' not found in [" + EnumSet.allOf(CellStatus.class).stream().map(CellStatus::getCode).collect(Collectors.joining(",")) + "]"));
     }
 
     public String getCode() {

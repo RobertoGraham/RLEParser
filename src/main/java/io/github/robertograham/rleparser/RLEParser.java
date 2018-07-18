@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.github.robertograham.rleparser.CellStatus.ALIVE;
+import static io.github.robertograham.rleparser.Predicates.not;
+
 public class RLEParser {
 
     private static final String RLE_HEADER_WIDTH_KEY = "x";
@@ -27,8 +30,8 @@ public class RLEParser {
 
         List<String> trimmedNonEmptyNonCommentRleLines = rleLines.stream()
                 .map(String::trim)
-                .filter(RLEParser::isRleLineNotEmpty)
-                .filter(RLEParser::isRleLineNotAComment)
+                .filter(not(String::isEmpty))
+                .filter(not(RleLinePredicates::isComment))
                 .collect(Collectors.toList());
 
         if (trimmedNonEmptyNonCommentRleLines.size() == 0)
@@ -54,7 +57,7 @@ public class RLEParser {
     }
 
     private static boolean isRunLengthStatusAlive(RunLengthStatus runLengthStatus) {
-        return CellStatus.ALIVE.equals(runLengthStatus.getStatus());
+        return ALIVE == runLengthStatus.getStatus();
     }
 
     private static RLEHeader extractRleHeader(String rleLine) {
@@ -90,7 +93,7 @@ public class RLEParser {
         else if (rleCellData.length() == 0)
             throw new IllegalArgumentException("RLE header has width > 0 and height > 0 but there are no lines after it");
         else if (!rleCellData.contains(RLE_CELL_DATA_TERMINATOR))
-            throw new IllegalArgumentException("RLE pattern did not contain terminating character '!'");
+            throw new IllegalArgumentException("RLE pattern did negate contain terminating character '!'");
         else {
             String patternData = rleCellData.substring(0, rleCellData.indexOf(RLE_CELL_DATA_TERMINATOR));
             String[] cellDataLines = patternData.split(RLE_CELL_DATA_LINE_SEPARATOR_REGEX);
