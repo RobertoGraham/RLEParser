@@ -8,11 +8,16 @@ class RunLengthStatusHelper {
     static RunLengthStatus fromEncoded(String encodedRunLengthStatus, int columnIndex, int rowIndex) {
         String cellStatusCode;
         Integer runLength;
-        Matcher matcher = Pattern.compile("(\\d*)(\\D)").matcher(encodedRunLengthStatus);
-        while (!matcher.find()) ;
-        runLength = matcher.group(1).isEmpty() ? 1 : Integer.parseInt(matcher.group(1));
-        cellStatusCode = matcher.group(2);
 
-        return new RunLengthStatus(runLength, CellStatus.fromCode(cellStatusCode), columnIndex, rowIndex);
+        Matcher matcher = Pattern.compile("(\\d*)(\\D)").matcher(encodedRunLengthStatus);
+
+        if (matcher.find()) {
+            runLength = matcher.group(1).isEmpty() ? 1 : Integer.parseInt(matcher.group(1));
+            cellStatusCode = matcher.group(2);
+
+            return new RunLengthStatus(runLength, CellStatus.fromCode(cellStatusCode), columnIndex, rowIndex);
+        }
+
+        throw new IllegalArgumentException("Encoded run length status did not match (\\d*)(\\D)");
     }
 }
