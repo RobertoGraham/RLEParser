@@ -20,6 +20,22 @@ public class Coordinate {
         return y;
     }
 
+    public Coordinate withX(int x) {
+        return new Coordinate(x, y);
+    }
+
+    public Coordinate withY(int y) {
+        return new Coordinate(x, y);
+    }
+
+    public Coordinate plusToX(int amount) {
+        return withX(x + amount);
+    }
+
+    public Coordinate plusToY(int amount) {
+        return withY(y + amount);
+    }
+
     @Override
     public String toString() {
         return "Coordinate{" +

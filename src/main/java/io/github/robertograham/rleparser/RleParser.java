@@ -6,14 +6,12 @@ import java.net.URI;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.robertograham.rleparser.CellStatus.ALIVE;
 import static io.github.robertograham.rleparser.Predicates.not;
 
-public class RLEParser {
+public class RleParser {
 
     private static final String RLE_HEADER_WIDTH_KEY = "x";
     private static final String RLE_HEADER_HEIGHT_KEY = "y";
@@ -23,9 +21,9 @@ public class RLEParser {
     private static final String RLE_CELL_DATA_LINE_SEPARATOR_REGEX = "\\$";
     @Language("RegExp")
     private static final String ENCODED_RUN_LENGTH_STATUS_REGEX = "\\d*\\D";
-    private static final Pattern ENCODED_RUN_LENGTH_STATUS_PATTERN = Pattern.compile(ENCODED_RUN_LENGTH_STATUS_REGEX);
+    private static final java.util.regex.Pattern ENCODED_RUN_LENGTH_STATUS_PATTERN = java.util.regex.Pattern.compile(ENCODED_RUN_LENGTH_STATUS_REGEX);
 
-    public static RLEData parseRLEFile(URI rleFileUri) {
+    public static Pattern parseRLEFile(URI rleFileUri) {
         List<String> rleLines = FileHelper.getFileAsStringList(rleFileUri);
 
         List<String> trimmedNonEmptyNonCommentRleLines = rleLines.stream()
@@ -37,30 +35,18 @@ public class RLEParser {
         if (trimmedNonEmptyNonCommentRleLines.size() == 0)
             throw new IllegalArgumentException("No non-comment, non-empty lines in RLE file");
 
-        RLEHeader rleHeader = extractRleHeader(trimmedNonEmptyNonCommentRleLines.get(0));
-        RLELiveCellCoordinates rleLiveCellCoordinates = extractRleLiveCellCoordinates(
-                rleHeader,
+        MetaData metaData = extractRleHeader(trimmedNonEmptyNonCommentRleLines.get(0));
+        LiveCells liveCells = extractRleLiveCellCoordinates(
+                metaData,
                 trimmedNonEmptyNonCommentRleLines.stream()
                         .skip(1)
                         .collect(Collectors.joining())
         );
 
-        return new RLEData(rleHeader, rleLiveCellCoordinates);
+        return new Pattern(metaData, liveCells);
     }
 
-    private static boolean isRleLineNotAComment(String rleFileLine) {
-        return !rleFileLine.startsWith("#");
-    }
-
-    private static boolean isRleLineNotEmpty(String rleFileLine) {
-        return !rleFileLine.isEmpty();
-    }
-
-    private static boolean isRunLengthStatusAlive(RunLengthStatus runLengthStatus) {
-        return ALIVE == runLengthStatus.getStatus();
-    }
-
-    private static RLEHeader extractRleHeader(String rleLine) {
+    private static MetaData extractRleHeader(String rleLine) {
         String rleFileWithNoWhiteSpace = rleLine.replaceAll("\\s", "");
         String[] rleFileHeaderProperties = rleFileWithNoWhiteSpace.split(",");
 
@@ -81,15 +67,15 @@ public class RLEParser {
         String height = rleFileHeaderPropertyKeyToPropertyValueMap.get(RLE_HEADER_HEIGHT_KEY);
         String rule = rleFileHeaderPropertyKeyToPropertyValueMap.get(RLE_HEADER_RULE_KEY);
 
-        return new RLEHeader(Integer.parseInt(width), Integer.parseInt(height), rule);
+        return new MetaData(Integer.parseInt(width), Integer.parseInt(height), rule);
     }
 
-    private static RLELiveCellCoordinates extractRleLiveCellCoordinates(RLEHeader rleHeader, String rleCellData) {
-        if (rleHeader.getX() == 0 && rleHeader.getY() == 0)
+    private static LiveCells extractRleLiveCellCoordinates(MetaData metaData, String rleCellData) {
+        if (metaData.getWidth() == 0 && metaData.getHeight() == 0)
             if (rleCellData.length() > 0)
                 throw new IllegalArgumentException("RLE header has width 0 and height 0 but there are lines after it");
             else
-                return new RLELiveCellCoordinates(new HashSet<>());
+                return new LiveCells(new HashSet<>());
         else if (rleCellData.length() == 0)
             throw new IllegalArgumentException("RLE header has width > 0 and height > 0 but there are no lines after it");
         else if (!rleCellData.contains(RLE_CELL_DATA_TERMINATOR))
@@ -103,28 +89,26 @@ public class RLEParser {
                     .collect(Collectors.toMap(Function.identity(), i -> cellDataLines[i]))
                     .entrySet()
                     .stream()
-                    .map(cellRowIndexToCellRowEntry -> {
-                        List<RunLengthStatus> runLengthStatuses = new ArrayList<>();
-                        Matcher matcher = ENCODED_RUN_LENGTH_STATUS_PATTERN.matcher(cellRowIndexToCellRowEntry.getValue());
-
-                        int columnIndex = 0;
+                    .map(yToCellRowEntry -> {
+                        List<StatusRun> statusRuns = new ArrayList<>();
+                        Matcher matcher = ENCODED_RUN_LENGTH_STATUS_PATTERN.matcher(yToCellRowEntry.getValue());
+                        Coordinate coordinate = new Coordinate(0, yToCellRowEntry.getKey());
 
                         while (matcher.find()) {
-                            runLengthStatuses.add(RunLengthStatusHelper.fromEncoded(matcher.group(), columnIndex, cellRowIndexToCellRowEntry.getKey()));
-                            columnIndex += runLengthStatuses.get(runLengthStatuses.size() - 1).getHorizontalRunLength();
+                            statusRuns.add(StatusRunHelper.fromEncodedStatusRun(matcher.group(), coordinate));
+                            coordinate = coordinate.plusToX(statusRuns.get(statusRuns.size() - 1).getLength());
                         }
 
-                        return runLengthStatuses;
+                        return statusRuns;
                     })
                     .flatMap(List::stream)
-                    .filter(RLEParser::isRunLengthStatusAlive)
-                    .map(runLengthStatus -> IntStream.range(0, runLengthStatus.getHorizontalRunLength())
-                            .mapToObj(xMinusColumnIndex -> new Coordinate(xMinusColumnIndex + runLengthStatus.getColumnIndex(), runLengthStatus.getRowIndex()))
-                            .collect(Collectors.toList()))
-                    .flatMap(List::stream)
-                    .collect(Collectors.toSet());
+                    .map(StatusRunHelper::getLiveCoordinates)
+                    .reduce(new HashSet<>(), (liveCoordinateSetAccumulator, liveCoordinateSet) -> {
+                        liveCoordinateSetAccumulator.addAll(liveCoordinateSet);
+                        return liveCoordinateSetAccumulator;
+                    });
 
-            return new RLELiveCellCoordinates(coordinates);
+            return new LiveCells(coordinates);
         }
     }
 }

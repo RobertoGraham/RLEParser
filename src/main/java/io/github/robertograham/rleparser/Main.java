@@ -1,27 +1,21 @@
 package io.github.robertograham.rleparser;
 
 import java.net.URISyntaxException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Main {
 
     public static void main(String[] args) throws URISyntaxException {
-        RLEData rleData = RLEParser.parseRLEFile(Main.class.getClassLoader().getResource("period14glidergun.rle").toURI());
+        Pattern pattern = RleParser.parseRLEFile(Main.class.getClassLoader().getResource("gosperglidergun.rle").toURI());
 
-        System.err.println("Finished");
-
-        for (int y = 0; y < rleData.getRleHeader().getY(); y++) {
-            for (int x = 0; x < rleData.getRleHeader().getX(); x++) {
-                int finalX = x;
-                int finalY = y;
-
-                Coordinate coordinate = rleData.getRleLiveCellCoordinates().getCoordinates().stream()
-                        .filter(c -> finalX == c.getX() && finalY == c.getY())
-                        .findFirst()
-                        .orElse(null);
-
-                System.out.print(coordinate == null ? "." : "@");
-            }
-            System.out.println();
-        }
+        System.out.println(IntStream.range(0, pattern.getMetaData().getHeight())
+                .mapToObj(pattern.getLiveCells()::filteredByY)
+                .map(filteredByY -> IntStream.range(0, pattern.getMetaData().getWidth())
+                        .mapToObj(filteredByY::filteredByX)
+                        .map(LiveCells::getCoordinates)
+                        .map(coordinates -> coordinates.size() == 0 ? "." : "@")
+                        .collect(Collectors.joining()))
+                .collect(Collectors.joining("\n")));
     }
 }
