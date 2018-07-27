@@ -1,4 +1,6 @@
-package io.github.robertograham.rleparser;
+package io.github.robertograham.rleparser.domain;
+
+import io.github.robertograham.rleparser.domain.enumeration.Status;
 
 import java.util.Objects;
 
@@ -6,12 +8,12 @@ public class StatusRun {
 
     private final int length;
     private final Status status;
-    private final Coordinate coordinate;
+    private final Coordinate origin;
 
-    public StatusRun(int length, Status status, Coordinate coordinate) {
+    public StatusRun(int length, Status status, Coordinate origin) {
         this.length = length;
         this.status = status;
-        this.coordinate = coordinate;
+        this.origin = origin;
     }
 
     public int getLength() {
@@ -22,8 +24,8 @@ public class StatusRun {
         return status;
     }
 
-    public Coordinate getCoordinate() {
-        return coordinate;
+    public Coordinate getOrigin() {
+        return origin;
     }
 
     @Override
@@ -31,7 +33,7 @@ public class StatusRun {
         return "StatusRun{" +
                 "length=" + length +
                 ", status=" + status +
-                ", coordinate=" + coordinate +
+                ", origin=" + origin +
                 '}';
     }
 
@@ -47,11 +49,11 @@ public class StatusRun {
 
         return length == statusRun.length &&
                 status == statusRun.status &&
-                Objects.equals(coordinate, statusRun.coordinate);
+                Objects.equals(origin, statusRun.origin);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(length, status, coordinate);
+        return Objects.hash(length, status, origin);
     }
 }

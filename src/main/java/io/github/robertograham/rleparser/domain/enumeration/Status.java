@@ -1,4 +1,4 @@
-package io.github.robertograham.rleparser;
+package io.github.robertograham.rleparser.domain.enumeration;
 
 import java.util.EnumSet;
 import java.util.stream.Collectors;

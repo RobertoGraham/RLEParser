@@ -1,13 +1,13 @@
-package io.github.robertograham.rleparser;
+package io.github.robertograham.rleparser.domain;
 
 import java.util.Objects;
 
-public class Pattern {
+public class PatternData {
 
     private final MetaData metaData;
     private final LiveCells liveCells;
 
-    public Pattern(MetaData metaData, LiveCells liveCells) {
+    public PatternData(MetaData metaData, LiveCells liveCells) {
         this.metaData = metaData;
         this.liveCells = liveCells;
     }
@@ -22,7 +22,7 @@ public class Pattern {
 
     @Override
     public String toString() {
-        return "Pattern{" +
+        return "PatternData{" +
                 "metaData=" + metaData +
                 ", liveCells=" + liveCells +
                 '}';
@@ -33,13 +33,13 @@ public class Pattern {
         if (this == object)
             return true;
 
-        if (!(object instanceof Pattern))
+        if (!(object instanceof PatternData))
             return false;
 
-        Pattern pattern = (Pattern) object;
+        PatternData patternData = (PatternData) object;
 
-        return Objects.equals(metaData, pattern.metaData) &&
-                Objects.equals(liveCells, pattern.liveCells);
+        return Objects.equals(metaData, patternData.metaData) &&
+                Objects.equals(liveCells, patternData.liveCells);
     }
 
     @Override

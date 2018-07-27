@@ -44,4 +44,4 @@ fabric.properties
 *.rar
 hs_err_pid*
 .idea/
-RLEParser.iml
+*.iml

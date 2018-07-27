@@ -1,4 +1,4 @@
-package io.github.robertograham.rleparser;
+package io.github.robertograham.rleparser.domain;
 
 import java.util.Objects;
 

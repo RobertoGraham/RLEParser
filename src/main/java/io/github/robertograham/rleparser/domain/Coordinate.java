@@ -1,4 +1,4 @@
-package io.github.robertograham.rleparser;
+package io.github.robertograham.rleparser.domain;
 
 import java.util.Objects;
 
@@ -21,19 +21,19 @@ public class Coordinate {
     }
 
     public Coordinate withX(int x) {
-        return new Coordinate(x, y);
+        return this.x == x ? this : new Coordinate(x, y);
     }
 
     public Coordinate withY(int y) {
-        return new Coordinate(x, y);
+        return this.y == y ? this : new Coordinate(x, y);
     }
 
     public Coordinate plusToX(int amount) {
-        return withX(x + amount);
+        return amount == 0 ? this : withX(x + amount);
     }
 
     public Coordinate plusToY(int amount) {
-        return withY(y + amount);
+        return amount == 0 ? this : withY(y + amount);
     }
 
     @Override

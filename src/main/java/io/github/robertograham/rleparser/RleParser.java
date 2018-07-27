@@ -1,76 +1,80 @@
 package io.github.robertograham.rleparser;
 
+import io.github.robertograham.rleparser.domain.*;
+import io.github.robertograham.rleparser.domain.enumeration.Status;
+import io.github.robertograham.rleparser.helper.FileHelper;
+import io.github.robertograham.rleparser.helper.RleFileHelper;
+import io.github.robertograham.rleparser.helper.StatusRunHelper;
 import org.intellij.lang.annotations.Language;
 
 import java.net.URI;
 import java.util.*;
-import java.util.function.Function;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.robertograham.rleparser.Predicates.not;
-
 public class RleParser {
 
-    private static final String RLE_HEADER_WIDTH_KEY = "x";
-    private static final String RLE_HEADER_HEIGHT_KEY = "y";
-    private static final String RLE_HEADER_RULE_KEY = "rule";
-    private static final String RLE_CELL_DATA_TERMINATOR = "!";
+    private static final String META_DATA_WIDTH_KEY = "x";
+    private static final String META_DATA_HEIGHT_KEY = "y";
+    private static final String META_DATA_RULE_KEY = "rule";
+    private static final String ENCODED_CELL_DATA_TERMINATOR = "!";
     @Language("RegExp")
-    private static final String RLE_CELL_DATA_LINE_SEPARATOR_REGEX = "\\$";
+    private static final String ENCODED_CELL_DATA_LINE_SEPARATOR_REGEX = "\\$";
     @Language("RegExp")
     private static final String ENCODED_RUN_LENGTH_STATUS_REGEX = "\\d*\\D";
-    private static final java.util.regex.Pattern ENCODED_RUN_LENGTH_STATUS_PATTERN = java.util.regex.Pattern.compile(ENCODED_RUN_LENGTH_STATUS_REGEX);
+    private static final Pattern ENCODED_STATUS_RUN_PATTERN = Pattern.compile(ENCODED_RUN_LENGTH_STATUS_REGEX);
 
-    public static Pattern parseRLEFile(URI rleFileUri) {
-        List<String> rleLines = FileHelper.getFileAsStringList(rleFileUri);
+    public static PatternData readPatternData(URI rleFileUri) {
+        List<String> lines = FileHelper.getFileAsStringList(rleFileUri);
 
-        List<String> trimmedNonEmptyNonCommentRleLines = rleLines.stream()
+        List<String> trimmedNonEmptyNonCommentLines = lines.stream()
+                .filter(Objects::nonNull)
                 .map(String::trim)
-                .filter(not(String::isEmpty))
-                .filter(not(RleLinePredicates::isComment))
+                .filter(string -> !string.isEmpty())
+                .filter(string -> !RleFileHelper.isCommentString(string))
                 .collect(Collectors.toList());
 
-        if (trimmedNonEmptyNonCommentRleLines.size() == 0)
+        if (trimmedNonEmptyNonCommentLines.size() == 0)
             throw new IllegalArgumentException("No non-comment, non-empty lines in RLE file");
 
-        MetaData metaData = extractRleHeader(trimmedNonEmptyNonCommentRleLines.get(0));
-        LiveCells liveCells = extractRleLiveCellCoordinates(
+        MetaData metaData = readMetaData(trimmedNonEmptyNonCommentLines.get(0));
+        LiveCells liveCells = extractLiveCells(
                 metaData,
-                trimmedNonEmptyNonCommentRleLines.stream()
+                trimmedNonEmptyNonCommentLines.stream()
                         .skip(1)
                         .collect(Collectors.joining())
         );
 
-        return new Pattern(metaData, liveCells);
+        return new PatternData(metaData, liveCells);
     }
 
-    private static MetaData extractRleHeader(String rleLine) {
-        String rleFileWithNoWhiteSpace = rleLine.replaceAll("\\s", "");
-        String[] rleFileHeaderProperties = rleFileWithNoWhiteSpace.split(",");
+    private static MetaData readMetaData(String line) {
+        String lineWithoutWhiteSpace = line.replaceAll("\\s", "");
+        String[] metaDataProperties = lineWithoutWhiteSpace.split(",");
 
-        if (rleFileHeaderProperties.length < 2)
+        if (metaDataProperties.length < 2)
             throw new IllegalArgumentException("RLE file header has less than two properties");
 
-        Map<String, String> rleFileHeaderPropertyKeyToPropertyValueMap = Arrays.stream(rleFileHeaderProperties)
-                .map(rleFileHeaderProperty -> rleFileHeaderProperty.split("="))
-                .map(rleFileHeaderPropertyComponents -> {
-                    if (rleFileHeaderPropertyComponents.length < 2)
-                        return new String[]{rleFileHeaderPropertyComponents[0], null};
+        Map<String, String> metaDataPropertyKeyValueMap = Arrays.stream(metaDataProperties)
+                .map(metaDataProperty -> metaDataProperty.split("="))
+                .map(metaDataPropertyKeyValueArray -> {
+                    if (metaDataPropertyKeyValueArray.length < 2)
+                        return new String[]{metaDataPropertyKeyValueArray[0], null};
                     else
-                        return rleFileHeaderPropertyComponents;
+                        return metaDataPropertyKeyValueArray;
                 })
-                .collect(Collectors.toMap(rleFileHeaderPropertyComponents -> rleFileHeaderPropertyComponents[0], rleFileHeaderPropertyComponents -> rleFileHeaderPropertyComponents[1]));
+                .collect(Collectors.toMap(metaDataPropertyKeyValueArray -> metaDataPropertyKeyValueArray[0], metaDataPropertyKeyValueArray -> metaDataPropertyKeyValueArray[1]));
 
-        String width = rleFileHeaderPropertyKeyToPropertyValueMap.get(RLE_HEADER_WIDTH_KEY);
-        String height = rleFileHeaderPropertyKeyToPropertyValueMap.get(RLE_HEADER_HEIGHT_KEY);
-        String rule = rleFileHeaderPropertyKeyToPropertyValueMap.get(RLE_HEADER_RULE_KEY);
+        String width = metaDataPropertyKeyValueMap.get(META_DATA_WIDTH_KEY);
+        String height = metaDataPropertyKeyValueMap.get(META_DATA_HEIGHT_KEY);
+        String rule = metaDataPropertyKeyValueMap.get(META_DATA_RULE_KEY);
 
         return new MetaData(Integer.parseInt(width), Integer.parseInt(height), rule);
     }
 
-    private static LiveCells extractRleLiveCellCoordinates(MetaData metaData, String rleCellData) {
+    private static LiveCells extractLiveCells(MetaData metaData, String rleCellData) {
         if (metaData.getWidth() == 0 && metaData.getHeight() == 0)
             if (rleCellData.length() > 0)
                 throw new IllegalArgumentException("RLE header has width 0 and height 0 but there are lines after it");
@@ -78,34 +82,37 @@ public class RleParser {
                 return new LiveCells(new HashSet<>());
         else if (rleCellData.length() == 0)
             throw new IllegalArgumentException("RLE header has width > 0 and height > 0 but there are no lines after it");
-        else if (!rleCellData.contains(RLE_CELL_DATA_TERMINATOR))
-            throw new IllegalArgumentException("RLE pattern did negate contain terminating character '!'");
+        else if (!rleCellData.contains(ENCODED_CELL_DATA_TERMINATOR))
+            throw new IllegalArgumentException("RLE pattern did not contain terminating character '!'");
         else {
-            String patternData = rleCellData.substring(0, rleCellData.indexOf(RLE_CELL_DATA_TERMINATOR));
-            String[] cellDataLines = patternData.split(RLE_CELL_DATA_LINE_SEPARATOR_REGEX);
+            String encodedCellData = rleCellData.substring(0, rleCellData.indexOf(ENCODED_CELL_DATA_TERMINATOR));
+            String[] encodedCellDataLines = encodedCellData.split(ENCODED_CELL_DATA_LINE_SEPARATOR_REGEX);
 
-            Set<Coordinate> coordinates = IntStream.range(0, cellDataLines.length)
+            Set<Coordinate> coordinates = IntStream.range(0, encodedCellDataLines.length)
                     .boxed()
-                    .collect(Collectors.toMap(Function.identity(), i -> cellDataLines[i]))
+                    .collect(Collectors.toMap(lineIndex -> lineIndex, lineIndex -> encodedCellDataLines[lineIndex]))
                     .entrySet()
                     .stream()
-                    .map(yToCellRowEntry -> {
+                    .map(lineIndexEncodedCellDataLineEntry -> {
+                        int y = lineIndexEncodedCellDataLineEntry.getKey();
+                        String encodedCellDataLine = lineIndexEncodedCellDataLineEntry.getValue();
                         List<StatusRun> statusRuns = new ArrayList<>();
-                        Matcher matcher = ENCODED_RUN_LENGTH_STATUS_PATTERN.matcher(yToCellRowEntry.getValue());
-                        Coordinate coordinate = new Coordinate(0, yToCellRowEntry.getKey());
+                        Matcher matcher = ENCODED_STATUS_RUN_PATTERN.matcher(encodedCellDataLine);
+                        Coordinate coordinate = new Coordinate(0, y);
 
                         while (matcher.find()) {
-                            statusRuns.add(StatusRunHelper.fromEncodedStatusRun(matcher.group(), coordinate));
+                            statusRuns.add(StatusRunHelper.readStatusRun(matcher.group(), coordinate));
                             coordinate = coordinate.plusToX(statusRuns.get(statusRuns.size() - 1).getLength());
                         }
 
                         return statusRuns;
                     })
                     .flatMap(List::stream)
-                    .map(StatusRunHelper::getLiveCoordinates)
-                    .reduce(new HashSet<>(), (liveCoordinateSetAccumulator, liveCoordinateSet) -> {
-                        liveCoordinateSetAccumulator.addAll(liveCoordinateSet);
-                        return liveCoordinateSetAccumulator;
+                    .filter(statusRun -> Status.ALIVE == statusRun.getStatus())
+                    .map(StatusRunHelper::readCoordinates)
+                    .reduce(new HashSet<>(), (coordinateAccumulator, coordinateSet) -> {
+                        coordinateAccumulator.addAll(coordinateSet);
+                        return coordinateAccumulator;
                     });
 
             return new LiveCells(coordinates);
