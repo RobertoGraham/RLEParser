@@ -12,7 +12,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class RleParser {
 
@@ -23,7 +22,7 @@ public class RleParser {
     @Language("RegExp")
     private static final String ENCODED_CELL_DATA_LINE_SEPARATOR_REGEX = "\\$";
     @Language("RegExp")
-    private static final String ENCODED_RUN_LENGTH_STATUS_REGEX = "\\d*\\D";
+    private static final String ENCODED_RUN_LENGTH_STATUS_REGEX = "\\d*[a-z$]";
     private static final Pattern ENCODED_STATUS_RUN_PATTERN = Pattern.compile(ENCODED_RUN_LENGTH_STATUS_REGEX);
 
     public static PatternData readPatternData(URI rleFileUri) {
@@ -86,29 +85,24 @@ public class RleParser {
             throw new IllegalArgumentException("RLE pattern did not contain terminating character '!'");
         else {
             String encodedCellData = rleCellData.substring(0, rleCellData.indexOf(ENCODED_CELL_DATA_TERMINATOR));
-            String[] encodedCellDataLines = encodedCellData.split(ENCODED_CELL_DATA_LINE_SEPARATOR_REGEX);
+            Matcher matcher = ENCODED_STATUS_RUN_PATTERN.matcher(encodedCellData);
+            List<StatusRun> statusRuns = new ArrayList<>();
+            Coordinate coordinate = new Coordinate(0, 0);
 
-            Set<Coordinate> coordinates = IntStream.range(0, encodedCellDataLines.length)
-                    .boxed()
-                    .collect(Collectors.toMap(lineIndex -> lineIndex, lineIndex -> encodedCellDataLines[lineIndex]))
-                    .entrySet()
-                    .stream()
-                    .map(lineIndexEncodedCellDataLineEntry -> {
-                        int y = lineIndexEncodedCellDataLineEntry.getKey();
-                        String encodedCellDataLine = lineIndexEncodedCellDataLineEntry.getValue();
-                        List<StatusRun> statusRuns = new ArrayList<>();
-                        Matcher matcher = ENCODED_STATUS_RUN_PATTERN.matcher(encodedCellDataLine);
-                        Coordinate coordinate = new Coordinate(0, y);
+            while (matcher.find()) {
+                StatusRun statusRun = StatusRunHelper.readStatusRun(matcher.group(), coordinate);
 
-                        while (matcher.find()) {
-                            statusRuns.add(StatusRunHelper.readStatusRun(matcher.group(), coordinate));
-                            coordinate = coordinate.plusToX(statusRuns.get(statusRuns.size() - 1).getLength());
-                        }
+                if (Status.LINE_END.equals(statusRun.getStatus()))
+                    coordinate = coordinate.withX(0).plusToY(statusRun.getLength());
+                else {
+                    coordinate = coordinate.plusToX(statusRun.getLength());
 
-                        return statusRuns;
-                    })
-                    .flatMap(List::stream)
-                    .filter(statusRun -> Status.ALIVE == statusRun.getStatus())
+                    if (Status.ALIVE.equals(statusRun.getStatus()))
+                        statusRuns.add(statusRun);
+                }
+            }
+
+            Set<Coordinate> coordinates = statusRuns.stream()
                     .map(StatusRunHelper::readCoordinates)
                     .reduce(new HashSet<>(), (coordinateAccumulator, coordinateSet) -> {
                         coordinateAccumulator.addAll(coordinateSet);

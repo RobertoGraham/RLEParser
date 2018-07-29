@@ -12,8 +12,10 @@ import java.util.stream.IntStream;
 
 public class StatusRunHelper {
 
+    private static final Pattern STATUS_RUN_PATTERN = Pattern.compile("(\\d*)([a-z$])");
+
     public static StatusRun readStatusRun(String encodedStatusRun, Coordinate origin) {
-        Matcher matcher = Pattern.compile("(\\d*)(\\D)").matcher(encodedStatusRun);
+        Matcher matcher = STATUS_RUN_PATTERN.matcher(encodedStatusRun);
 
         if (matcher.find())
             return new StatusRun(
@@ -24,8 +26,7 @@ public class StatusRunHelper {
                     origin
             );
 
-
-        throw new IllegalArgumentException("Encoded run length status did not match (\\d*)(\\D)");
+        throw new IllegalArgumentException("Encoded run length status did not match (\\d*)([a-z$])");
     }
 
     public static Set<Coordinate> readCoordinates(StatusRun statusRun) {

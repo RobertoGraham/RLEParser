@@ -6,7 +6,8 @@ import java.util.stream.Collectors;
 public enum Status {
 
     ALIVE("o"),
-    DEAD("b");
+    DEAD("b"),
+    LINE_END("$");
 
     private final String code;
 
