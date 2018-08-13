@@ -1,8 +1,8 @@
-package io.github.robertograham.rleparser.domain;
+package io.github.robertograham.rleparser.domain.export;
 
 import java.util.Objects;
 
-public class Coordinate {
+public final class Coordinate {
 
     private final int x;
     private final int y;
@@ -12,29 +12,30 @@ public class Coordinate {
         this.y = y;
     }
 
-    public int getX() {
+    public int x() {
         return x;
     }
 
-    public int getY() {
+    public int y() {
         return y;
     }
 
     public Coordinate withX(int x) {
-        return this.x == x ? this : new Coordinate(x, y);
+        return new Coordinate(x, y);
     }
 
     public Coordinate withY(int y) {
-        return this.y == y ? this : new Coordinate(x, y);
+        return new Coordinate(x, y);
     }
 
     public Coordinate plusToX(int amount) {
-        return amount == 0 ? this : withX(x + amount);
+        return withX(x + amount);
     }
 
     public Coordinate plusToY(int amount) {
-        return amount == 0 ? this : withY(y + amount);
+        return withY(y + amount);
     }
+
 
     @Override
     public String toString() {
@@ -52,7 +53,7 @@ public class Coordinate {
         if (!(object instanceof Coordinate))
             return false;
 
-        Coordinate coordinate = (Coordinate) object;
+        var coordinate = (Coordinate) object;
 
         return x == coordinate.x &&
                 y == coordinate.y;

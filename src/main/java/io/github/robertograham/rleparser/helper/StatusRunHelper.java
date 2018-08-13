@@ -1,21 +1,25 @@
 package io.github.robertograham.rleparser.helper;
 
-import io.github.robertograham.rleparser.domain.Coordinate;
 import io.github.robertograham.rleparser.domain.StatusRun;
 import io.github.robertograham.rleparser.domain.enumeration.Status;
+import io.github.robertograham.rleparser.domain.export.Coordinate;
 
+import java.util.EnumSet;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class StatusRunHelper {
 
-    private static final Pattern STATUS_RUN_PATTERN = Pattern.compile("(\\d*)([a-z$])");
+    public static final String STATUS_CODES = EnumSet.allOf(Status.class).stream()
+            .map(Status::getCode)
+            .collect(Collectors.joining());
+
+    private static final Pattern STATUS_RUN_PATTERN = Pattern.compile(String.format("^(\\d*)([%s])$", STATUS_CODES));
 
     public static StatusRun readStatusRun(String encodedStatusRun, Coordinate origin) {
-        Matcher matcher = STATUS_RUN_PATTERN.matcher(encodedStatusRun);
+        var matcher = STATUS_RUN_PATTERN.matcher(encodedStatusRun);
 
         if (matcher.find())
             return new StatusRun(
@@ -26,12 +30,12 @@ public class StatusRunHelper {
                     origin
             );
 
-        throw new IllegalArgumentException("Encoded run length status did not match (\\d*)([a-z$])");
+        throw new IllegalArgumentException("Encoded run length status did not match " + STATUS_RUN_PATTERN.pattern());
     }
 
     public static Set<Coordinate> readCoordinates(StatusRun statusRun) {
-        return IntStream.range(statusRun.getOrigin().getX(), statusRun.getOrigin().getX() + statusRun.getLength())
-                .mapToObj(statusRun.getOrigin()::withX)
+        return IntStream.range(0, statusRun.length())
+                .mapToObj(statusRun.origin()::plusToX)
                 .collect(Collectors.toSet());
     }
 }

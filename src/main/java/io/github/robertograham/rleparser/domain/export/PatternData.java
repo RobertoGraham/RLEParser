@@ -1,30 +1,32 @@
-package io.github.robertograham.rleparser.domain;
+package io.github.robertograham.rleparser.domain.export;
 
 import java.util.Objects;
+import java.util.Set;
 
-public class PatternData {
+public final class PatternData {
 
     private final MetaData metaData;
-    private final LiveCells liveCells;
+    private final Set<Coordinate> coordinates;
 
-    public PatternData(MetaData metaData, LiveCells liveCells) {
+    public PatternData(MetaData metaData, Set<Coordinate> coordinates) {
         this.metaData = metaData;
-        this.liveCells = liveCells;
+        this.coordinates = coordinates;
     }
 
-    public MetaData getMetaData() {
+    public MetaData metaData() {
         return metaData;
     }
 
-    public LiveCells getLiveCells() {
-        return liveCells;
+    public Set<Coordinate> coordinates() {
+        return coordinates;
     }
+
 
     @Override
     public String toString() {
         return "PatternData{" +
                 "metaData=" + metaData +
-                ", liveCells=" + liveCells +
+                ", coordinates=" + coordinates +
                 '}';
     }
 
@@ -36,14 +38,14 @@ public class PatternData {
         if (!(object instanceof PatternData))
             return false;
 
-        PatternData patternData = (PatternData) object;
+        var patternData = (PatternData) object;
 
         return Objects.equals(metaData, patternData.metaData) &&
-                Objects.equals(liveCells, patternData.liveCells);
+                Objects.equals(coordinates, patternData.coordinates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(metaData, liveCells);
+        return Objects.hash(metaData, coordinates);
     }
 }

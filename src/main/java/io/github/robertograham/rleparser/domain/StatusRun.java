@@ -1,10 +1,11 @@
 package io.github.robertograham.rleparser.domain;
 
 import io.github.robertograham.rleparser.domain.enumeration.Status;
+import io.github.robertograham.rleparser.domain.export.Coordinate;
 
 import java.util.Objects;
 
-public class StatusRun {
+public final class StatusRun {
 
     private final int length;
     private final Status status;
@@ -16,15 +17,15 @@ public class StatusRun {
         this.origin = origin;
     }
 
-    public int getLength() {
+    public int length() {
         return length;
     }
 
-    public Status getStatus() {
+    public Status status() {
         return status;
     }
 
-    public Coordinate getOrigin() {
+    public Coordinate origin() {
         return origin;
     }
 
@@ -45,7 +46,7 @@ public class StatusRun {
         if (!(object instanceof StatusRun))
             return false;
 
-        StatusRun statusRun = (StatusRun) object;
+        var statusRun = (StatusRun) object;
 
         return length == statusRun.length &&
                 status == statusRun.status &&

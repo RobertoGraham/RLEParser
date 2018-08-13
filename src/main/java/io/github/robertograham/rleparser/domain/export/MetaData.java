@@ -1,8 +1,8 @@
-package io.github.robertograham.rleparser.domain;
+package io.github.robertograham.rleparser.domain.export;
 
 import java.util.Objects;
 
-public class MetaData {
+public final class MetaData {
 
     private final int width;
     private final int height;
@@ -14,15 +14,15 @@ public class MetaData {
         this.rule = rule;
     }
 
-    public int getWidth() {
+    public int width() {
         return width;
     }
 
-    public int getHeight() {
+    public int height() {
         return height;
     }
 
-    public String getRule() {
+    public String rule() {
         return rule;
     }
 
@@ -43,7 +43,7 @@ public class MetaData {
         if (!(object instanceof MetaData))
             return false;
 
-        MetaData metaData = (MetaData) object;
+        var metaData = (MetaData) object;
 
         return width == metaData.width &&
                 height == metaData.height &&
