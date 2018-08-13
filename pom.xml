@@ -6,12 +6,12 @@
 
     <groupId>io.github.robertograham</groupId>
     <artifactId>rle-parser-module</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>Parses RLE files</description>
-    <url>https://github.com/RobertoGraham/RLEParser</url>
+    <description>Jigsaw module to parse RLE files</description>
+    <url>https://github.com/RobertoGraham/RLEParser/tree/rle-parser-module</url>
 
     <licenses>
         <license>
@@ -30,7 +30,7 @@
     <scm>
         <connection>scm:git:git://github.com/RobertoGraham/RLEParser.git</connection>
         <developerConnection>scm:git:ssh://github.com:RobertoGraham/RLEParser.git</developerConnection>
-        <url>https://github.com/RobertoGraham/RLEParser/tree/master</url>
+        <url>https://github.com/RobertoGraham/RLEParser/tree/rle-parser-module</url>
     </scm>
 
     <distributionManagement>

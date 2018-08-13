@@ -1,4 +1,4 @@
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.robertograham/rle-parser/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.robertograham/rle-parser)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.robertograham/rle-parser-module/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.robertograham/rle-parser-module)
 # RLEParser
 Reads Game of Life .rle files (JDK 10 Required)
 
@@ -7,7 +7,7 @@ Reads Game of Life .rle files (JDK 10 Required)
 <dependency>
     <groupId>io.github.robertograham</groupId>
     <artifactId>rle-parser-module</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
